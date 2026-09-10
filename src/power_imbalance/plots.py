@@ -186,3 +186,41 @@ def one_sided_comparison(results: dict, stability: dict, path: Path):
     a2.legend(fontsize=7.6, framealpha=0.95)
     a2.set_title("Only the one-sided version\nsurvives the second half", fontsize=10.5)
     return _save(fig, path)
+
+
+def calibration(cal: pd.DataFrame, path: Path):
+    """Claimed confidence against realised frequency. The 45-degree line is the
+    promise; the bars are what was delivered."""
+    fig, ax = plt.subplots(figsize=(6.4, 3.4))
+    ax.plot([0, 1], [0, 1], ls="--", color=STEEL, lw=1.4, label="Perfect calibration")
+    ax.plot(cal["claimed"], cal["realised"], "o-", color=NAVY, lw=2, ms=7, label="This model")
+    for _, r in cal.iterrows():
+        ax.annotate(f"{r['error']:+.0%}", (r["claimed"], r["realised"]), fontsize=7.6,
+                    xytext=(5, -11), textcoords="offset points", color=RED)
+    ax.set_xlabel("Confidence the model claims")
+    ax.set_ylabel("Frequency actually observed")
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+    ax.legend(fontsize=7.8, framealpha=0.95, loc="upper left")
+    ax.set_title("The model says 90%. The data says 65%.", fontsize=10.5)
+    return _save(fig, path)
+
+
+def confidence_ladder(lad: pd.DataFrame, path: Path):
+    """One bar per score decile: what each rung of the ladder actually earns."""
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(9.4, 3.3))
+    x = lad.index.to_numpy()
+    cols = np.where(lad["mean_pnl"] > 0, TEAL, RED)
+    a1.bar(x, lad["mean_pnl"], color=cols, width=0.72)
+    a1.axhline(0, color=NAVY, lw=1)
+    a1.set_xticks(x); a1.set_xlabel("Score decile — low confidence to high")
+    a1.set_ylabel("Mean P&L of buying, EUR/MWh")
+    a1.set_title("The rungs are not equal, and the bottom one is toxic", fontsize=10.5)
+
+    a2.plot(x, 100 * lad["realised_p_short"], "o-", color=NAVY, lw=1.9, ms=5, label="Realised P(short)")
+    a2.plot(x, 100 * lad["mean_score"], "o--", color=STEEL, lw=1.6, ms=4, label="Score the model claims")
+    a2.axhline(50, color=RED, ls=":", lw=1.2)
+    a2.set_xticks(x); a2.set_xlabel("Score decile")
+    a2.set_ylabel("%")
+    a2.legend(fontsize=7.6, framealpha=0.95, loc="upper left")
+    a2.set_title("Ordering works. Levels do not.", fontsize=10.5)
+    return _save(fig, path)
