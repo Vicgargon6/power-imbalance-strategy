@@ -6,3 +6,6 @@ __pycache__/
 venv/
 *.egg-info/
 .DS_Store
+
+# Local, not part of the published repository
+PUSH_TO_GITHUB.md

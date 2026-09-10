@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "omie-imbalance"
+name = "power-imbalance"
 version = "0.1.0"
 description = "Day-ahead versus imbalance strategy study, Italian hourly data"
 readme = "README.md"
