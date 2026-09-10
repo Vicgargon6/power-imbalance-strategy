@@ -2,8 +2,8 @@
 import pandas as pd
 import pytest
 
-from omie_imbalance.features import build
-from omie_imbalance.information import InformationSet, assert_causal
+from power_imbalance.features import build
+from power_imbalance.information import InformationSet, assert_causal
 
 
 def test_decision_time_is_noon_the_day_before():

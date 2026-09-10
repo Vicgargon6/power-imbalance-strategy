@@ -10,9 +10,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from omie_imbalance import backtest as bt  # noqa: E402
-from omie_imbalance import data, information, risk  # noqa: E402
-from omie_imbalance.strategy import StrategyParams  # noqa: E402
+from power_imbalance import backtest as bt  # noqa: E402
+from power_imbalance import data, information, risk  # noqa: E402
+from power_imbalance.strategy import StrategyParams  # noqa: E402
 
 OUT = ROOT / "reports"
 OUT.mkdir(exist_ok=True)
@@ -69,8 +69,34 @@ for name, h in stability.items():
               f"  [{v['ci_low']:+.2f}, {v['ci_high']:+.2f}]  Sharpe {v['sharpe_ann']:+.2f}")
 print()
 
+# ---------------------------------------------------------------- capacity
+# What a desk would actually need to know before allocating to this.
+best = results["Two-stage, LightGBM"].pnl
+capacity = {
+    "hours_to_detect_80pct_power": risk.hours_to_detect(best, power=0.8),
+    "hours_to_detect_90pct_power": risk.hours_to_detect(best, power=0.9),
+    "hours_available_out_of_sample": int(len(best)),
+    "monthly": risk.monthly_distribution(best),
+}
+capacity["max_notional_mwh_per_hour"] = {
+    f"stop_{s // 1000}k": risk.max_notional(capacity["monthly"]["p5"], s)
+    for s in (50_000, 100_000, 250_000)
+}
+m = capacity["monthly"]
+print("CAPACITY — what a risk committee would ask")
+print(f"  hours needed to prove the edge (80% power) : {capacity['hours_to_detect_80pct_power']:,.0f}"
+      f"  ({capacity['hours_to_detect_80pct_power'] / 24:,.0f} days)")
+print(f"  hours actually available out of sample     : {capacity['hours_available_out_of_sample']:,}"
+      f"  ({capacity['hours_available_out_of_sample'] / 24:,.0f} days)")
+print(f"  month of P&L, EUR per MWh of notional      : P5 {m['p5']:,.0f} · median {m['p50']:,.0f} · P95 {m['p95']:,.0f}")
+print(f"  probability of a losing month              : {m['prob_losing_month']:.1%}")
+for k, v in capacity["max_notional_mwh_per_hour"].items():
+    print(f"  max notional with a {k.replace('stop_', '').replace('k', ' kEUR')} monthly stop : {v:,.0f} MWh/h")
+print()
+
 summary = {
     "stability": stability,
+    "capacity": capacity,
     "data": {
         "rows": quality.rows, "days": quality.days,
         "first": str(quality.first), "last": str(quality.last),
@@ -86,7 +112,7 @@ for name, res in results.items():
 print(f"-> {OUT/'results.json'}, {OUT/'strategy_comparison.csv'}")
 
 # ---------------------------------------------------------------- figures
-from omie_imbalance import plots  # noqa: E402
+from power_imbalance import plots  # noqa: E402
 
 FIG = OUT / "figures"
 plots.spread_distribution(df, FIG / "f1_spread_distribution.png")

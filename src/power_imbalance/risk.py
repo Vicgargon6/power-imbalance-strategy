@@ -135,3 +135,64 @@ def compare(results: dict[str, tuple[pd.Series, pd.Series]]) -> pd.DataFrame:
     rows = {name: summary(pnl, pos) for name, (pnl, pos) in results.items()}
     df = pd.DataFrame(rows).T
     return df.sort_values("sharpe_ann", ascending=False)
+
+
+def hours_to_detect(pnl: pd.Series, power: float = 0.8, alpha: float = 0.05) -> float:
+    """How many trading hours are needed before the edge is distinguishable from zero.
+
+    The question a risk committee should ask before allocating to a strategy with
+    a thin edge and a fat tail: *if this works exactly as measured, how long until
+    we can prove it?* And, symmetrically, how long before we could tell that it
+    had stopped working.
+
+    Standard two-sided test for a mean, with the sample's own dispersion:
+
+        n = (z_{1-alpha/2} + z_{power})^2 * sigma^2 / mu^2
+
+    On this dataset the answer is roughly 75 days at 80% power, against 52 days
+    of out-of-sample history. The strategy cannot be validated by the data that
+    produced it — which is a fact about the signal-to-noise ratio, not a defect
+    of the backtest.
+    """
+    from scipy.stats import norm
+
+    p = _as_series(pnl).dropna()
+    mu, sd = p.mean(), p.std(ddof=1)
+    if mu == 0:
+        return float("inf")
+    z = norm.ppf(1 - alpha / 2) + norm.ppf(power)
+    return float(z**2 * sd**2 / mu**2)
+
+
+def monthly_distribution(
+    pnl: pd.Series, days: int = 21, n: int = 20000, seed: int = 0
+) -> dict:
+    """Distribution of a month of P&L, by bootstrap over whole trading days.
+
+    Hourly CVaR is the right tail measure, but it is not the number a desk sizes
+    against. What a desk needs is the distribution of a month, because that is
+    the horizon of a stop-loss and of a conversation with a risk manager.
+    """
+    p = _as_series(pnl).dropna()
+    daily = p.groupby(p.index.normalize()).sum().to_numpy()
+    rng = np.random.default_rng(seed)
+    sims = np.array([rng.choice(daily, days, replace=True).sum() for _ in range(n)])
+    return {
+        "days_per_month": days,
+        "mean": float(sims.mean()),
+        "p1": float(np.percentile(sims, 1)),
+        "p5": float(np.percentile(sims, 5)),
+        "p50": float(np.percentile(sims, 50)),
+        "p95": float(np.percentile(sims, 95)),
+        "prob_losing_month": float((sims < 0).mean()),
+    }
+
+
+def max_notional(monthly_p5: float, stop_loss_eur: float) -> float:
+    """Notional in MWh per hour that keeps a 1-in-20 month inside the stop-loss.
+
+    Deliberately crude, and deliberately anchored on the P5 month rather than on
+    the mean: sizing off the average outcome is how a desk discovers its limit
+    by breaching it.
+    """
+    return float(stop_loss_eur / abs(monthly_p5)) if monthly_p5 < 0 else float("inf")

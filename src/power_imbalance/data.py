@@ -1,4 +1,4 @@
-"""Loading and validation of the OMIE day-ahead / imbalance dataset.
+"""Loading and validation of the day-ahead / imbalance dataset.
 
 The raw file is hourly and has four fields: day-ahead price, imbalance price,
 and the system's net imbalance volume. Everything else in this project is
@@ -46,7 +46,7 @@ class DataQuality:
 def load_raw(path: str | Path) -> pd.DataFrame:
     """Read the CSV extract and build a proper hourly index.
 
-    The hour column is 1..24 (OMIE convention), so hour 1 is the interval
+    The hour column is 1..24 (exchange convention), so hour 1 is the interval
     starting at 00:00. Timestamps are left naive local time: the dataset does
     not span a DST change (1 Jan - 10 Apr 2024), and inventing a timezone we
     cannot verify would be worse than not having one. If the series is ever

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from omie_imbalance.strategy import StrategyParams, pnl, positions
+from power_imbalance.strategy import StrategyParams, pnl, positions
 
 
 def _pred(spread_hat, p_long=None):

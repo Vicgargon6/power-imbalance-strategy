@@ -101,7 +101,7 @@ def pnl(position: pd.Series, spread: pd.Series, cost_per_mwh: float = 0.0) -> pd
     """Realised P&L in EUR per MWh of notional.
 
     `cost_per_mwh` covers whatever a real desk pays to be in this trade at all
-    — OMIE fees, the balance-responsible-party share, collateral. Small next to
+    — exchange fees, the balance-responsible-party share, collateral. Small next to
     the spread, but it is the difference between a strategy that survives
     contact with an operations budget and one that does not.
     """

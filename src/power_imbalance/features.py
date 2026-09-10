@@ -8,7 +8,7 @@ Two families:
 
   calendar   hour of day, day of week. Known with certainty and, as it turns
              out, the only family that carries usable signal — the daily shape
-             of the Spanish system imbalance is driven by the solar profile.
+             of the system imbalance is driven by the solar profile.
 
   lagged     the system's own recent history, shifted by at least the minimum
              safe lag from `information.py`. Strongly autocorrelated at one

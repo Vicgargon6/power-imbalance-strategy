@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from omie_imbalance import risk
+from power_imbalance import risk
 
 
 def _series(values):

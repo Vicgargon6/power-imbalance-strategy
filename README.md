@@ -1,7 +1,7 @@
-# Day-ahead vs imbalance: a strategy study on the Spanish power market
+# Day-ahead vs imbalance: a strategy study on an Italian hourly dataset
 
-A quantitative study of a single trade: take a position in the OMIE day-ahead
-auction, close it in the REE imbalance market, keep the difference.
+A quantitative study of a single trade: take a position in the day-ahead
+auction, close it in the imbalance market, keep the difference.
 
 There is a small forecastable edge. It is worth about 9 EUR/MWh out of sample —
 and it lives almost entirely in one month of the three. Most of the work here is
@@ -140,8 +140,8 @@ Split the out-of-sample period in half:
 **Every strategy earns its entire result in the first half and nothing in the
 second.** Not one of them — all of them, including the parameter-free baseline.
 That points at the regime rather than at overfitting a particular model: the
-February shape stopped working in late March, which is exactly when Spanish
-solar output climbs steeply into spring.
+February shape stopped working in late March, which is exactly when solar
+output climbs steeply into spring.
 
 The conclusion is not "this strategy works". It is: *this strategy worked in
 February, the mechanism is plausible, and a study on one quarter of data cannot
@@ -174,6 +174,36 @@ The metric used is the **Sharpe ratio of hourly P&L, never quoted without CVaR
 beside it**, plus maximum drawdown, tail concentration (share of absolute P&L
 from the worst 1% of hours), and a **block bootstrap by day** for the confidence
 interval on the mean.
+
+### How much can you actually put behind it
+
+Hourly CVaR is the right tail measure, but it is not what a desk sizes against.
+Bootstrapping whole trading days into months:
+
+| A month of P&L, EUR per MWh of notional | |
+|---|---|
+| P5 | **−219** |
+| Median | +4,055 |
+| P95 | +11,725 |
+| Probability of a losing month | **6.1%** |
+
+| Monthly stop-loss | Notional that keeps a 1-in-20 month inside it |
+|---|---|
+| 50 kEUR | 228 MWh/h |
+| 100 kEUR | 457 MWh/h |
+| 250 kEUR | 1,142 MWh/h |
+
+**And the number that should decide the allocation.** If the edge is exactly what
+was measured, it takes **1,792 trading hours — 75 days — to distinguish it from
+zero at 80% power**. There are 1,256 hours of out-of-sample history: 52 days.
+
+The strategy cannot be validated by the data that produced it, and symmetrically,
+it would take about two and a half months of live trading to notice that it had
+stopped working. That is the real risk here, and no tail measure captures it:
+not the size of the loss in a bad hour, but the length of time you would keep
+paying for an edge that had already gone. It argues for small size, a hard
+monthly stop, and treating the first quarter live as a paid experiment rather
+than as a position.
 
 **On volatility models.** Conditional-variance forecasting is the right idea for
 sizing, but the premise fails at this horizon: the autocorrelation of |spread|
@@ -216,7 +246,7 @@ protection, not return.**
 ## Repository layout
 
 ```
-src/omie_imbalance/
+src/power_imbalance/
     data.py          loading, validation, derived quantities, tail diagnostics
     information.py   gate closure, information lag, the causality guard
     features.py      calendar and lagged features, built to respect that lag
@@ -259,4 +289,7 @@ promising.
 
 ---
 
-*Data: OMIE day-ahead and REE imbalance settlement, January–April 2024.*
+*Data: hourly day-ahead and imbalance settlement prices plus the system's net
+imbalance volume, 1 January to 10 April 2024. The dataset arrived unlabelled;
+it is an Italian series. Nothing in the analysis depends on the country beyond
+the gate-closure time, which is 12:00 on D-1 for every SDAC day-ahead auction.*

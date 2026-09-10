@@ -55,6 +55,25 @@
       }
     }
   },
+  "capacity": {
+    "hours_to_detect_80pct_power": 1792.4011652022639,
+    "hours_to_detect_90pct_power": 2399.5166158780717,
+    "hours_available_out_of_sample": 1256,
+    "monthly": {
+      "days_per_month": 21,
+      "mean": 4756.9840640150005,
+      "p1": -1678.3606958,
+      "p5": -218.82455799999957,
+      "p50": 4055.2281000000007,
+      "p95": 11724.787094499992,
+      "prob_losing_month": 0.06085
+    },
+    "max_notional_mwh_per_hour": {
+      "stop_50k": 228.49354961338526,
+      "stop_100k": 456.9870992267705,
+      "stop_250k": 1142.4677480669263
+    }
+  },
   "data": {
     "rows": 2408,
     "days": 101,

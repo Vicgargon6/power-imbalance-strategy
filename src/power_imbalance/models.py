@@ -135,7 +135,7 @@ class SeasonalBaseline:
     than the mean, because with this tail the mean of a training window is
     dominated by whichever extreme hour happened to fall inside it.
 
-    It has no parameters to overfit and it encodes one real fact: the Spanish
+    It has no parameters to overfit and it encodes one real fact: the
     system is long in the middle of the day and short in the evening, because
     that is what solar does to it.
     """

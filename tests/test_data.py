@@ -9,7 +9,7 @@ def test_system_sign_convention(df):
 
 def test_sign_agreement_is_near_deterministic(df):
     """The finding the project is built on, pinned as a test."""
-    from omie_imbalance.data import sign_agreement
+    from power_imbalance.data import sign_agreement
 
     a = sign_agreement(df)
     assert a["P(spread>0 | system short)"] > 0.99

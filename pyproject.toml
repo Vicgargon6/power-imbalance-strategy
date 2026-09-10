@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "omie-imbalance"
 version = "0.1.0"
-description = "Day-ahead versus imbalance strategy study on the Spanish power market"
+description = "Day-ahead versus imbalance strategy study, Italian hourly data"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["pandas>=2.0", "numpy>=1.24", "scikit-learn>=1.3", "matplotlib>=3.7"]
