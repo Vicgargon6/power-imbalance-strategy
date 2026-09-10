@@ -1,4 +1,60 @@
 {
+  "stability": {
+    "Two-stage, LightGBM": {
+      "first_half": {
+        "from": "2024-02-18",
+        "to": "2024-03-15",
+        "mean": 18.496452945859872,
+        "ci_low": 5.998665482882165,
+        "ci_high": 37.47064731167328,
+        "sharpe_ann": 8.904385173246988
+      },
+      "second_half": {
+        "from": "2024-03-15",
+        "to": "2024-04-10",
+        "mean": 0.4662676751592371,
+        "ci_low": -6.856641196512045,
+        "ci_high": 7.848021395348597,
+        "sharpe_ann": 0.7800790374870569
+      }
+    },
+    "Two-stage model": {
+      "first_half": {
+        "from": "2024-02-18",
+        "to": "2024-03-15",
+        "mean": 19.035148359872615,
+        "ci_low": 5.885373787022293,
+        "ci_high": 39.916030472800905,
+        "sharpe_ann": 9.166174460414696
+      },
+      "second_half": {
+        "from": "2024-03-15",
+        "to": "2024-04-10",
+        "mean": -2.957266847133757,
+        "ci_low": -10.117552411171124,
+        "ci_high": 5.098143224849386,
+        "sharpe_ann": -4.954356714372067
+      }
+    },
+    "Seasonal median, |edge|>=20": {
+      "first_half": {
+        "from": "2024-02-10",
+        "to": "2024-03-11",
+        "mean": 9.922426118784529,
+        "ci_low": -1.265757069506327,
+        "ci_high": 19.472203104627063,
+        "sharpe_ann": 9.418811320429427
+      },
+      "second_half": {
+        "from": "2024-03-11",
+        "to": "2024-04-10",
+        "mean": -0.5938522928176788,
+        "ci_low": -5.8788021515740345,
+        "ci_high": 4.718335864252986,
+        "sharpe_ann": -1.1730958624955399
+      }
+    }
+  },
   "data": {
     "rows": 2408,
     "days": 101,
@@ -36,6 +92,26 @@
       "best_hour": 4550.502,
       "tail_concentration_1pct": 0.0
     },
+    "Two-stage, LightGBM": {
+      "hours": 1256.0,
+      "hours_traded": 1256.0,
+      "share_traded": 1.0,
+      "mean": 9.4813603105,
+      "median": 25.5795,
+      "total": 11908.58855,
+      "mean_ci_low": 1.6137235087,
+      "mean_ci_high": 19.7199898313,
+      "hit_rate": 0.5469745223,
+      "std": 143.2796204633,
+      "sharpe_ann": 6.193530514,
+      "sortino_ann": 28.3145459547,
+      "var_5pct": -76.445105,
+      "cvar_5pct": -106.1492006349,
+      "max_drawdown": -2975.60022,
+      "worst_hour": -441.131,
+      "best_hour": 4550.502,
+      "tail_concentration_1pct": 0.0316571502
+    },
     "Seasonal median, |edge|>=20": {
       "hours": 1448.0,
       "hours_traded": 1020.0,
@@ -55,6 +131,46 @@
       "worst_hour": -1855.32571,
       "best_hour": 1026.372,
       "tail_concentration_1pct": 0.092256257
+    },
+    "Two-stage model": {
+      "hours": 1256.0,
+      "hours_traded": 1256.0,
+      "share_traded": 1.0,
+      "mean": 8.0389407564,
+      "median": 23.884,
+      "total": 10096.90959,
+      "mean_ci_low": -0.40167021,
+      "mean_ci_high": 19.2415771312,
+      "hit_rate": 0.5358280255,
+      "std": 143.367853446,
+      "sharpe_ann": 5.2480637064,
+      "sortino_ann": 24.2649608697,
+      "var_5pct": -75.67725,
+      "cvar_5pct": -106.6897204762,
+      "max_drawdown": -3336.3412,
+      "worst_hour": -441.131,
+      "best_hour": 4550.502,
+      "tail_concentration_1pct": 0.0318285574
+    },
+    "Two-stage, vol-scaled": {
+      "hours": 1256.0,
+      "hours_traded": 1256.0,
+      "share_traded": 1.0,
+      "mean": 1.0490407753,
+      "median": 0.4927058625,
+      "total": 1317.5952137563,
+      "mean_ci_low": -0.4220895901,
+      "mean_ci_high": 2.5974687421,
+      "hit_rate": 0.5358280255,
+      "std": 20.3160300254,
+      "sharpe_ann": 4.8328751533,
+      "sortino_ann": 8.2952325182,
+      "var_5pct": -21.9051199053,
+      "cvar_5pct": -33.8619191206,
+      "max_drawdown": -1008.6836241783,
+      "worst_hour": -120.5890672898,
+      "best_hour": 379.6465015251,
+      "tail_concentration_1pct": 0.0574638506
     },
     "Seasonal median": {
       "hours": 1448.0,
@@ -100,41 +216,21 @@
       "hours": 1448.0,
       "hours_traded": 1448.0,
       "share_traded": 1.0,
-      "mean": 1.8638512776,
-      "median": 2.10652,
-      "total": 2698.85665,
-      "mean_ci_low": -4.9395283461,
-      "mean_ci_high": 7.804304911,
-      "hit_rate": 0.5027624309,
-      "std": 145.7045803459,
-      "sharpe_ann": 1.1972644971,
-      "sortino_ann": 1.0002558678,
-      "var_5pct": -73.1235735,
-      "cvar_5pct": -168.0881994521,
-      "max_drawdown": -5347.76087,
-      "worst_hour": -4550.502,
-      "best_hour": 1855.32571,
-      "tail_concentration_1pct": 0.0892830442
-    },
-    "Two-stage model": {
-      "hours": 1256.0,
-      "hours_traded": 1256.0,
-      "share_traded": 1.0,
-      "mean": -0.5703694347,
-      "median": 0.103,
-      "total": -716.38401,
-      "mean_ci_low": -9.1713926027,
-      "mean_ci_high": 6.5438491207,
-      "hit_rate": 0.5,
-      "std": 143.5921024408,
-      "sharpe_ann": -0.3717729118,
-      "sortino_ann": -0.2904576026,
-      "var_5pct": -75.434405,
-      "cvar_5pct": -174.0763649206,
-      "max_drawdown": -5439.10723,
+      "mean": 1.4113978936,
+      "median": 25.305,
+      "total": 2043.70415,
+      "mean_ci_low": -6.9716362454,
+      "mean_ci_high": 8.6593691564,
+      "hit_rate": 0.5448895028,
+      "std": 145.7096690527,
+      "sharpe_ann": 0.9065946383,
+      "sortino_ann": 0.6720381423,
+      "var_5pct": -72.684764,
+      "cvar_5pct": -201.1161409589,
+      "max_drawdown": -5328.83852,
       "worst_hour": -4550.502,
       "best_hour": 1026.372,
-      "tail_concentration_1pct": 0.0953750117
+      "tail_concentration_1pct": 0.1184752596
     },
     "Always sell DA": {
       "hours": 1448.0,

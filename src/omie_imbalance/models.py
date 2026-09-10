@@ -11,9 +11,15 @@ Stage 2 — regression. Predict the spread, with the stage-1 probability as an
     worth taking when the expected move is 40 EUR/MWh is not worth taking when
     it is 4, and the strategy needs that distinction to know when to stand down.
 
-Both stages are deliberately small models. 101 days of hourly data with four
-raw columns does not support anything larger, and a gradient-boosted forest on
-this sample would fit the January weather rather than the market.
+Both stages are kept small. 101 days of hourly data with four raw columns does
+not support much more — and, tested rather than assumed, a gradient-boosted tree
+ties with logistic regression here (AUC 0.580 against 0.577). The non-linearity
+is not where the difficulty is.
+
+One design note, learned the hard way and left in the code as a comment in
+`strategy._direction`: the direction must come from stage 1. An earlier version
+took it from the sign of stage 2's output and turned a working classifier into a
+losing strategy.
 """
 
 from __future__ import annotations
@@ -28,7 +34,21 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
+def _lightgbm():
+    """Optional. Included because a gradient-boosted tree is the obvious thing to
+    try on this problem, and because the answer to 'why didn't you use XGBoost?'
+    should be a measurement rather than an opinion. On this data it ties with
+    logistic regression — the non-linearity buys 0.003 of AUC."""
+    import lightgbm as lgb
+
+    return lgb.LGBMClassifier(
+        n_estimators=300, learning_rate=0.05, num_leaves=15, min_child_samples=40,
+        subsample=0.8, colsample_bytree=0.8, verbose=-1, random_state=0,
+    )
+
+
 CLASSIFIERS = {
+    "lightgbm": _lightgbm,
     "logistic": lambda: Pipeline(
         [
             ("scale", StandardScaler()),
@@ -105,7 +125,11 @@ class TwoStageModel:
 
 @dataclass
 class SeasonalBaseline:
-    """The model to beat, and — spoiler — the one that wins.
+    """The model to beat: no parameters, one line of pandas.
+
+    It does not win once the two-stage model is wired correctly, but it comes
+    close enough to be the honest reference point — and it beat the model for as
+    long as the model had a bug in it, which is the more useful lesson.
 
     For each clock hour, the median spread observed so far. The median rather
     than the mean, because with this tail the mean of a training window is

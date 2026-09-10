@@ -41,12 +41,23 @@ class StrategyParams:
 
 
 def _direction(pred: pd.DataFrame) -> np.ndarray:
-    """Buy the day-ahead when the spread is expected positive, sell otherwise.
+    """Buy the day-ahead when the system is expected short, sell when it is long.
 
-    Taken from the predicted spread rather than from the probability, because
-    the two agree by construction and the spread also carries the size.
+    Direction comes from the CLASSIFIER, not from the regression. An earlier
+    version of this file took the sign of the predicted spread instead, on the
+    assumption that the two stages agree. They do not: the regression is fitted
+    on a winsorised target by least squares, so its sign is dominated by the
+    magnitude of past moves rather than by the direction of the next one.
+    Routing direction through it destroyed a signal the classifier had found —
+    AUC 0.58 turned into a strategy losing 0.57 EUR/MWh.
+
+    The division of labour is now the one the architecture implies: stage 1
+    decides the side, stage 2 only decides whether the move is big enough to
+    bother and how much to put behind it.
+
+    p_long < 0.5  ->  system expected short  ->  spread expected positive  ->  BUY
     """
-    return np.sign(pred["spread_hat"].to_numpy())
+    return np.sign(0.5 - pred["p_long"].to_numpy())
 
 
 def positions(

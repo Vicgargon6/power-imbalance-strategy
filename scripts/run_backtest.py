@@ -33,6 +33,9 @@ results = {
     "Always sell DA": bt.run_constant(df, -1, cfg_always),
     "Two-stage model": bt.run_model(df, cfg_always),
     "Two-stage, calendar only": bt.run_model(df, bt.BacktestConfig(use_lags=False)),
+    "Two-stage, LightGBM": bt.run_model(df, bt.BacktestConfig(classifier="lightgbm")),
+    "Two-stage, vol-scaled": bt.run_model(
+        df, bt.BacktestConfig(params=StrategyParams(sizing="kelly_like"))),
     "Seasonal median": bt.run_seasonal(df, cfg_always),
     "Seasonal median, |edge|>=20": bt.run_seasonal(df, cfg_filter, min_abs_median=20.0),
     "Oracle (system sign)": bt.run_oracle(df, cfg_always),
@@ -43,7 +46,31 @@ pd.set_option("display.width", 200, "display.max_columns", 30)
 print(table.round(3).to_string(), "\n")
 table.to_csv(OUT / "strategy_comparison.csv")
 
+# ---------------------------------------------------------------- stability
+# One number decides whether any of this is believable: does the edge survive
+# into the second half of the out-of-sample period, or was it one good month?
+stability = {}
+for name in ("Two-stage, LightGBM", "Two-stage model", "Seasonal median, |edge|>=20"):
+    p = results[name].pnl
+    mid = p.index[len(p) // 2]
+    halves = {}
+    for label, sub in (("first_half", p[p.index < mid]), ("second_half", p[p.index >= mid])):
+        lo, hi = risk.bootstrap_mean_ci(sub)
+        halves[label] = {"from": str(sub.index.min().date()), "to": str(sub.index.max().date()),
+                         "mean": float(sub.mean()), "ci_low": lo, "ci_high": hi,
+                         "sharpe_ann": risk.sharpe(sub)}
+    stability[name] = halves
+
+print("STABILITY — the same strategy, split in two halves")
+for name, h in stability.items():
+    print(f"  {name}")
+    for label, v in h.items():
+        print(f"    {label:12} {v['from']}..{v['to']}  mean {v['mean']:+7.2f}"
+              f"  [{v['ci_low']:+.2f}, {v['ci_high']:+.2f}]  Sharpe {v['sharpe_ann']:+.2f}")
+print()
+
 summary = {
+    "stability": stability,
     "data": {
         "rows": quality.rows, "days": quality.days,
         "first": str(quality.first), "last": str(quality.last),
