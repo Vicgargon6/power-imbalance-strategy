@@ -3,10 +3,13 @@
 A quantitative study of a single trade: take a position in the day-ahead
 auction, close it in the imbalance market, keep the difference.
 
-There is a small forecastable edge. It is worth about 9 EUR/MWh out of sample —
-and it lives almost entirely in one month of the three. Most of the work here is
-in establishing that second clause, because without it the first is a
-recruitment-exercise fairy tale.
+There is a small forecastable edge. Taken in both directions it is worth about 9
+EUR/MWh out of sample and it dies in the second half of the period. Taken on one
+side only it is worth 7.41 with **less than half the tail, twice the Sharpe, and
+it survives the second half** — which is the difference between an artefact and a
+result.
+
+Most of the work here is in establishing that distinction.
 
 ---
 
@@ -100,6 +103,46 @@ of the same baseline loses money** (−0.51 against +7.66 per MWh). That is the
 verdict on conditional-mean time series models here: with a mean of +0.33 and a
 median of +29.75, anything fitted to the conditional mean is fitting the tail.
 
+### 5. The two sides of the trade are not symmetric, and only one of them survives
+
+Look at where the losses actually are:
+
+| | Spread minimum | Spread maximum |
+|---|---|---|
+| System **short** | **0** | +8,171 |
+| System **long** | −4,713 | **0** |
+
+**Call the state correctly and you never lose.** The spread cannot go negative
+when the system is short, nor positive when it is long, so a correct call is
+bounded below by zero. Every euro of loss in this strategy comes from calling
+the state wrong — there is no such thing as a small loss, only correct calls and
+expensive mistakes.
+
+And the mistakes are not symmetric either. Twelve of the fifteen most extreme
+hours occur with the system long, but the single largest is +8,171 with the
+system short — which is the worst possible outcome for a *seller*. Selling the
+day-ahead is a bet with a bounded gain and a five-figure left tail.
+
+So: restrict the strategy to one side.
+
+| Strategy | Traded | Mean | 95% CI | Sharpe | CVaR 5% | 1st half | 2nd half |
+|---|---|---|---|---|---|---|---|
+| Both sides | 100% | 9.48 | [1.61, 19.72] | 6.19 | −106 | +18.50 | **+0.47** |
+| **Buy side only** | **45%** | **7.41** | **[3.35, 12.01]** | **14.29** | **−74** | **+12.32** | **+2.50** |
+| Sell side only | 32% | 1.86 | [−3.94, 10.68] | 1.32 | −85 | +4.78 | −1.05 |
+
+The sell side earns 1.86 with a confidence interval straddling zero and turns
+negative out of sample. **It was not adding return, it was adding variance —
+and it was what killed the strategy in the second half.** Dropping it halves the
+tail, more than doubles the Sharpe, tightens the confidence interval away from
+zero, and leaves a strategy that is still positive in the second half.
+
+**The honest caveat.** The buy side was chosen after seeing that it works, on the
+same 101 days. There is a mechanism — the loss is bounded on a correct call and
+the extremes cluster on one side — so this is not pure data mining. But it is one
+more model tried on one sample, and it should be re-tested on fresh data before
+anyone believes the Sharpe.
+
 ---
 
 ## Results
@@ -110,7 +153,8 @@ true uncapped spread.
 | Strategy | Traded | Mean | 95% CI on the mean | Sharpe | CVaR 5% | Worst hour |
 |---|---|---|---|---|---|---|
 | *Oracle — system sign (ceiling)* | *99%* | *56.00* | *[49.5, 64.8]* | *38.96* | *+7.9* | *0* |
-| **Two-stage, LightGBM** | **100%** | **9.48** | **[1.61, 19.72]** | **6.19** | **−106** | **−441** |
+| **LightGBM, buy side only** | **45%** | **7.41** | **[3.35, 12.01]** | **14.29** | **−74** | **−441** |
+| Two-stage, LightGBM (both sides) | 100% | 9.48 | [1.61, 19.72] | 6.19 | −106 | −441 |
 | Two-stage, logistic | 100% | 8.04 | [−0.40, 19.24] | 5.25 | −107 | −441 |
 | Seasonal median, \|edge\| ≥ 20 | 70% | 4.66 | [−1.59, 10.60] | 5.63 | −132 | −1,855 |
 | Seasonal median | 97% | 5.93 | [−2.73, 16.99] | 3.82 | −147 | −1,855 |
@@ -133,12 +177,16 @@ Split the out-of-sample period in half:
 
 | Strategy | First half | Second half |
 |---|---|---|
-| Two-stage, LightGBM | **+18.50** [+6.00, +37.47] | **+0.47** [−6.86, +7.85] |
+| **LightGBM, buy side only** | **+12.32** [+5.45, +19.92] | **+2.50** [−1.42, +6.67] |
+| Two-stage, LightGBM | +18.50 [+6.00, +37.47] | +0.47 [−6.86, +7.85] |
 | Two-stage, logistic | +19.04 [+5.89, +39.92] | −2.96 [−10.12, +5.10] |
 | Seasonal median, \|edge\| ≥ 20 | +9.92 [−1.27, +19.47] | −0.59 [−5.88, +4.72] |
 
-**Every strategy earns its entire result in the first half and nothing in the
-second.** Not one of them — all of them, including the parameter-free baseline.
+**Every bidirectional strategy earns its entire result in the first half and
+nothing in the second.** All of them, including the parameter-free baseline —
+which is what pointed at the regime rather than at overfitting, and ultimately at
+the asymmetry in finding 5. The one-sided version is the only one that is still
+positive in the second half.
 That points at the regime rather than at overfitting a particular model: the
 February shape stopped working in late March, which is exactly when solar
 output climbs steeply into spring.
@@ -180,30 +228,32 @@ interval on the mean.
 Hourly CVaR is the right tail measure, but it is not what a desk sizes against.
 Bootstrapping whole trading days into months:
 
-| A month of P&L, EUR per MWh of notional | |
-|---|---|
-| P5 | **−219** |
-| Median | +4,055 |
-| P95 | +11,725 |
-| Probability of a losing month | **6.1%** |
+For the one-sided strategy, bootstrapping whole trading days into months:
 
-| Monthly stop-loss | Notional that keeps a 1-in-20 month inside it |
-|---|---|
-| 50 kEUR | 228 MWh/h |
-| 100 kEUR | 457 MWh/h |
-| 250 kEUR | 1,142 MWh/h |
+| A month of P&L, EUR per MWh of notional | Buy side only | Both sides |
+|---|---|---|
+| P1 | −2 | −1,678 |
+| P5 | **+946** | −219 |
+| Median | +3,591 | +4,055 |
+| Probability of a losing month | **1.0%** | 6.1% |
 
-**And the number that should decide the allocation.** If the edge is exactly what
-was measured, it takes **1,792 trading hours — 75 days — to distinguish it from
-zero at 80% power**. There are 1,256 hours of out-of-sample history: 52 days.
+Note what happens to the sizing question. For the bidirectional strategy the
+monthly stop binds: a 50 kEUR stop allows about 228 MWh/h. For the one-sided
+version even a one-in-twenty month makes money, so the stop stops being the
+binding constraint and **drawdown becomes the limit instead** — with an observed
+maximum drawdown of 2,121 EUR/MWh, a 250 kEUR drawdown tolerance allows about
+118 MWh/h. Quoting a notional off a P1 that sits at zero would produce a number
+in the tens of thousands, which is an artefact of dividing by something close to
+zero rather than a capacity estimate.
 
-The strategy cannot be validated by the data that produced it, and symmetrically,
-it would take about two and a half months of live trading to notice that it had
-stopped working. That is the real risk here, and no tail measure captures it:
-not the size of the loss in a bad hour, but the length of time you would keep
-paying for an edge that had already gone. It argues for small size, a hard
-monthly stop, and treating the first quarter live as a paid experiment rather
-than as a position.
+**And the number that changed most.** At 80% power it takes **337 trading hours —
+14 days — to distinguish the one-sided edge from zero**, against 1,256 hours of
+history. The bidirectional version needed 1,792 hours and had 1,256.
+
+That inverts the conclusion of the previous version of this study. The
+bidirectional strategy could not be validated by the data that produced it. The
+one-sided one can, four times over. What remains is that both were selected on
+the same 101 days, so the next test is fresh data, not more models.
 
 **On volatility models.** Conditional-variance forecasting is the right idea for
 sizing, but the premise fails at this horizon: the autocorrelation of |spread|

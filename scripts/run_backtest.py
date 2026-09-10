@@ -36,6 +36,10 @@ results = {
     "Two-stage, LightGBM": bt.run_model(df, bt.BacktestConfig(classifier="lightgbm")),
     "Two-stage, vol-scaled": bt.run_model(
         df, bt.BacktestConfig(params=StrategyParams(sizing="kelly_like"))),
+    "LightGBM, buy side only": bt.run_model(df, bt.BacktestConfig(
+        classifier="lightgbm", params=StrategyParams(side="buy", min_confidence=0.2))),
+    "LightGBM, sell side only": bt.run_model(df, bt.BacktestConfig(
+        classifier="lightgbm", params=StrategyParams(side="sell", min_confidence=0.2))),
     "Seasonal median": bt.run_seasonal(df, cfg_always),
     "Seasonal median, |edge|>=20": bt.run_seasonal(df, cfg_filter, min_abs_median=20.0),
     "Oracle (system sign)": bt.run_oracle(df, cfg_always),
@@ -50,7 +54,7 @@ table.to_csv(OUT / "strategy_comparison.csv")
 # One number decides whether any of this is believable: does the edge survive
 # into the second half of the out-of-sample period, or was it one good month?
 stability = {}
-for name in ("Two-stage, LightGBM", "Two-stage model", "Seasonal median, |edge|>=20"):
+for name in ("LightGBM, buy side only", "Two-stage, LightGBM", "Two-stage model", "Seasonal median, |edge|>=20"):
     p = results[name].pnl
     mid = p.index[len(p) // 2]
     halves = {}
@@ -71,15 +75,26 @@ print()
 
 # ---------------------------------------------------------------- capacity
 # What a desk would actually need to know before allocating to this.
-best = results["Two-stage, LightGBM"].pnl
+best = results["LightGBM, buy side only"].pnl
 capacity = {
     "hours_to_detect_80pct_power": risk.hours_to_detect(best, power=0.8),
     "hours_to_detect_90pct_power": risk.hours_to_detect(best, power=0.9),
     "hours_available_out_of_sample": int(len(best)),
     "monthly": risk.monthly_distribution(best),
 }
+# Size on the worst percentile that is actually a loss. For the one-sided
+# strategy even the P5 month makes money, so the P1 is the binding one.
+# Which constraint actually binds depends on the strategy. For the bidirectional
+# version the monthly stop binds, because a one-in-twenty month loses money. For
+# the one-sided version even the P1 month is roughly flat, so dividing by it
+# explodes; there the binding constraint is the drawdown, and saying so is more
+# useful than quoting a notional of thirty thousand megawatt hours.
+m0 = capacity["monthly"]
+dd = abs(risk.max_drawdown(best))
+capacity["max_drawdown"] = -dd
+capacity["binding_constraint"] = "monthly stop" if m0["p5"] < 0 else "drawdown"
 capacity["max_notional_mwh_per_hour"] = {
-    f"stop_{s // 1000}k": risk.max_notional(capacity["monthly"]["p5"], s)
+    f"limit_{s // 1000}k": (risk.max_notional(m0["p5"], s) if m0["p5"] < 0 else s / dd)
     for s in (50_000, 100_000, 250_000)
 }
 m = capacity["monthly"]
@@ -88,10 +103,13 @@ print(f"  hours needed to prove the edge (80% power) : {capacity['hours_to_detec
       f"  ({capacity['hours_to_detect_80pct_power'] / 24:,.0f} days)")
 print(f"  hours actually available out of sample     : {capacity['hours_available_out_of_sample']:,}"
       f"  ({capacity['hours_available_out_of_sample'] / 24:,.0f} days)")
-print(f"  month of P&L, EUR per MWh of notional      : P5 {m['p5']:,.0f} · median {m['p50']:,.0f} · P95 {m['p95']:,.0f}")
+print(f"  month of P&L, EUR per MWh of notional      : P1 {m['p1']:,.0f} · P5 {m['p5']:,.0f}"
+      f" · median {m['p50']:,.0f} · P95 {m['p95']:,.0f}")
 print(f"  probability of a losing month              : {m['prob_losing_month']:.1%}")
+print(f"  binding constraint                         : {capacity['binding_constraint']}"
+      f"  (P5 month {m['p5']:,.0f} · max drawdown {capacity['max_drawdown']:,.0f})")
 for k, v in capacity["max_notional_mwh_per_hour"].items():
-    print(f"  max notional with a {k.replace('stop_', '').replace('k', ' kEUR')} monthly stop : {v:,.0f} MWh/h")
+    print(f"  max notional with a {k.replace('limit_', '').replace('k', ' kEUR')} limit : {v:,.0f} MWh/h")
 print()
 
 summary = {
@@ -122,3 +140,11 @@ plots.equity_curves({k: v.pnl for k, v in results.items()}, FIG / "f4_equity.png
                     exclude=("Oracle (system sign)",))
 plots.risk_return(table, FIG / "f5_risk_return.png", exclude=("Oracle (system sign)",))
 print(f"-> {FIG}")
+
+# ---------------------------------------------------------------- addendum figures
+plots.loss_is_one_sided(df, FIG / "f6_one_sided_loss.png")
+plots.one_sided_comparison(
+    {k: results[k].pnl for k in ("LightGBM, buy side only", "Two-stage, LightGBM", "LightGBM, sell side only")},
+    {k: stability[k] for k in ("LightGBM, buy side only", "Two-stage, LightGBM")},
+    FIG / "f7_one_sided_comparison.png")
+print(f"-> {FIG/'f6_one_sided_loss.png'}, {FIG/'f7_one_sided_comparison.png'}")

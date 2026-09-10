@@ -1,5 +1,23 @@
 {
   "stability": {
+    "LightGBM, buy side only": {
+      "first_half": {
+        "from": "2024-02-18",
+        "to": "2024-03-15",
+        "mean": 12.316727372611465,
+        "ci_low": 5.453119065200618,
+        "ci_high": 19.921960648725584,
+        "sharpe_ann": 19.158296701525938
+      },
+      "second_half": {
+        "from": "2024-03-15",
+        "to": "2024-04-10",
+        "mean": 2.4973489171974523,
+        "ci_low": -1.4168706136501,
+        "ci_high": 6.665079702664329,
+        "sharpe_ann": 7.238480086571622
+      }
+    },
     "Two-stage, LightGBM": {
       "first_half": {
         "from": "2024-02-18",
@@ -56,22 +74,24 @@
     }
   },
   "capacity": {
-    "hours_to_detect_80pct_power": 1792.4011652022639,
-    "hours_to_detect_90pct_power": 2399.5166158780717,
+    "hours_to_detect_80pct_power": 336.75319929113874,
+    "hours_to_detect_90pct_power": 450.816989431048,
     "hours_available_out_of_sample": 1256,
     "monthly": {
       "days_per_month": 21,
-      "mean": 4756.9840640150005,
-      "p1": -1678.3606958,
-      "p5": -218.82455799999957,
-      "p50": 4055.2281000000007,
-      "p95": 11724.787094499992,
-      "prob_losing_month": 0.06085
+      "mean": 3684.4565520994997,
+      "p1": -1.7550494000000887,
+      "p5": 946.1934785000002,
+      "p50": 3590.98081,
+      "p95": 6798.0557375,
+      "prob_losing_month": 0.01005
     },
+    "max_drawdown": -2121.1566299999995,
+    "binding_constraint": "drawdown",
     "max_notional_mwh_per_hour": {
-      "stop_50k": 228.49354961338526,
-      "stop_100k": 456.9870992267705,
-      "stop_250k": 1142.4677480669263
+      "limit_50k": 23.572045219498953,
+      "limit_100k": 47.14409043899791,
+      "limit_250k": 117.86022609749477
     }
   },
   "data": {
@@ -110,6 +130,26 @@
       "worst_hour": 0.0,
       "best_hour": 4550.502,
       "tail_concentration_1pct": 0.0
+    },
+    "LightGBM, buy side only": {
+      "hours": 1256.0,
+      "hours_traded": 561.0,
+      "share_traded": 0.446656051,
+      "mean": 7.4070381449,
+      "median": 0.0,
+      "total": 9303.23991,
+      "mean_ci_low": 3.347354543,
+      "mean_ci_high": 12.0054602761,
+      "hit_rate": 0.5721925134,
+      "std": 48.5172983046,
+      "sharpe_ann": 14.2889404138,
+      "sortino_ann": 18.923868,
+      "var_5pct": -51.04175,
+      "cvar_5pct": -74.4631498413,
+      "max_drawdown": -2121.15663,
+      "worst_hour": -441.131,
+      "best_hour": 1026.372,
+      "tail_concentration_1pct": 0.0570078048
     },
     "Two-stage, LightGBM": {
       "hours": 1256.0,
@@ -230,6 +270,26 @@
       "worst_hour": -4550.502,
       "best_hour": 1026.372,
       "tail_concentration_1pct": 0.1175725314
+    },
+    "LightGBM, sell side only": {
+      "hours": 1256.0,
+      "hours_traded": 406.0,
+      "share_traded": 0.3232484076,
+      "mean": 1.8607036306,
+      "median": 0.0,
+      "total": 2337.04376,
+      "mean_ci_low": -3.9416732225,
+      "mean_ci_high": 10.6777282935,
+      "hit_rate": 0.5467980296,
+      "std": 132.1080522601,
+      "sharpe_ann": 1.318256643,
+      "sortino_ann": 8.6822595946,
+      "var_5pct": -66.26625,
+      "cvar_5pct": -84.6513149206,
+      "max_drawdown": -2006.30443,
+      "worst_hour": -122.20979,
+      "best_hour": 4550.502,
+      "tail_concentration_1pct": 0.0550056908
     },
     "Two-stage, calendar only": {
       "hours": 1448.0,

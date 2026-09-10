@@ -134,3 +134,55 @@ def risk_return(table: pd.DataFrame, path: Path, exclude: tuple[str, ...] = ()):
     ax.set_ylabel("Mean P&L, EUR/MWh")
     ax.set_title("Return against the tail, not against the standard deviation", fontsize=10.5)
     return _save(fig, path)
+
+
+def loss_is_one_sided(df: pd.DataFrame, path: Path):
+    """Why restricting to one side works: a correct call cannot lose."""
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(9.4, 3.3), gridspec_kw={"width_ratios": [1, 1.15]})
+    short = df.loc[df.system_long == 0, "spread"]
+    long_ = df.loc[df.system_long == 1, "spread"]
+    for i, (lbl, x, col) in enumerate((("System\nshort", short, RED), ("System\nlong", long_, TEAL))):
+        a1.bar(i, x.max(), 0.55, color=col, alpha=0.85)
+        a1.bar(i, x.min(), 0.55, color=col, alpha=0.85)
+        a1.text(i, x.max() + 400, f"{x.max():,.0f}", ha="center", fontsize=9, color=NAVY, weight="bold")
+        a1.text(i, x.min() - 800, f"{x.min():,.0f}", ha="center", fontsize=9, color=NAVY, weight="bold")
+    a1.axhline(0, color=NAVY, lw=1.4)
+    a1.set_xticks([0, 1]); a1.set_xticklabels(["System\nshort", "System\nlong"], fontsize=9)
+    a1.set_ylabel("Spread range, EUR/MWh")
+    a1.set_ylim(-6200, 9600)
+    a1.set_title("A correct call cannot lose:\nthe spread never crosses zero within a state", fontsize=10.5)
+
+    ext = df["spread"].abs().nlargest(15).index
+    sub = df.loc[ext].sort_values("spread")
+    cols = np.where(sub.system_long == 1, TEAL, RED)
+    a2.barh(range(len(sub)), sub["spread"], color=cols)
+    a2.axvline(0, color=NAVY, lw=1.2)
+    a2.set_yticks([]); a2.set_xlabel("Spread, EUR/MWh")
+    a2.set_title("The 15 most extreme hours: 12 with the system long,\nbut the largest of all is the seller's nightmare", fontsize=10.5)
+    return _save(fig, path)
+
+
+def one_sided_comparison(results: dict, stability: dict, path: Path):
+    """Equity and split-half, both sides against buy only."""
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(9.4, 3.3), gridspec_kw={"width_ratios": [1.35, 1]})
+    for (name, pnl), col in zip(results.items(), (NAVY, TEAL, STEEL)):
+        a1.plot(pnl.index, pnl.cumsum(), lw=1.9, color=col, label=name)
+    a1.axhline(0, color=STEEL, lw=1)
+    a1.set_ylabel("Cumulative P&L, EUR per MWh traded")
+    a1.legend(fontsize=7.8, framealpha=0.95, loc="upper left")
+    a1.set_title("Out-of-sample equity", fontsize=10.5)
+    fig.autofmt_xdate()
+
+    names = list(stability)
+    x = np.arange(len(names))
+    first = [stability[k]["first_half"]["mean"] for k in names]
+    second = [stability[k]["second_half"]["mean"] for k in names]
+    a2.bar(x - 0.2, first, 0.4, color=STEEL, label="First half")
+    a2.bar(x + 0.2, second, 0.4, color=NAVY, label="Second half")
+    a2.axhline(0, color=RED, ls="--", lw=1.2)
+    a2.set_xticks(x)
+    a2.set_xticklabels([k.replace(", ", ",\n") for k in names], fontsize=7)
+    a2.set_ylabel("Mean P&L, EUR/MWh")
+    a2.legend(fontsize=7.6, framealpha=0.95)
+    a2.set_title("Only the one-sided version\nsurvives the second half", fontsize=10.5)
+    return _save(fig, path)

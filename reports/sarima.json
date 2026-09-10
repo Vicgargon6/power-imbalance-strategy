@@ -1,0 +1,35 @@
+{
+  "model": "SARIMA(1, 0, 1)(1, 0, 1, 24)",
+  "hours": 1223,
+  "train_window_hours": 720,
+  "forecast_lag_hours": 36,
+  "sign_accuracy": 0.5322976287816844,
+  "base_rate": 0.5126737530662306,
+  "fit_seconds": 39.1,
+  "strategies": {
+    "both sides": {
+      "mean": -0.18884925592804447,
+      "ci_low": -10.20861394260621,
+      "ci_high": 7.9421387105582015,
+      "sharpe_ann": -0.1130016195005962,
+      "cvar_5pct": -192.80573370967738,
+      "share_traded": 1.0
+    },
+    "buy side only": {
+      "mean": 1.6548498609975475,
+      "ci_low": -7.73695530478382,
+      "ci_high": 9.416654214052274,
+      "sharpe_ann": 1.0858561474492456,
+      "cvar_5pct": -174.33794870967742,
+      "share_traded": 0.5273916598528209
+    },
+    "buy, |forecast| filter": {
+      "mean": 4.2066292232215865,
+      "ci_low": 0.0974007736042888,
+      "ci_high": 8.509678839018381,
+      "sharpe_ann": 10.072791771159382,
+      "cvar_5pct": -84.4780529032258,
+      "share_traded": 0.3982011447260834
+    }
+  }
+}

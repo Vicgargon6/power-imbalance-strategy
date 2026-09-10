@@ -188,11 +188,19 @@ def monthly_distribution(
     }
 
 
-def max_notional(monthly_p5: float, stop_loss_eur: float) -> float:
-    """Notional in MWh per hour that keeps a 1-in-20 month inside the stop-loss.
+def max_notional(monthly_loss: float, stop_loss_eur: float) -> float:
+    """Notional in MWh per hour that keeps a bad month inside the stop-loss.
 
-    Deliberately crude, and deliberately anchored on the P5 month rather than on
-    the mean: sizing off the average outcome is how a desk discovers its limit
-    by breaching it.
+    Deliberately crude, and deliberately anchored on a percentile of the loss
+    distribution rather than on the mean: sizing off the average outcome is how
+    a desk discovers its limit by breaching it.
+
+    If the percentile passed in is positive — as it is for the one-sided
+    strategy at P5, where even a one-in-twenty month makes money — the stop is
+    not the binding constraint at that confidence level. The caller should then
+    size on a deeper percentile or on drawdown, and this returns NaN rather than
+    infinity so that nobody reads it as "unlimited".
     """
-    return float(stop_loss_eur / abs(monthly_p5)) if monthly_p5 < 0 else float("inf")
+    if monthly_loss >= 0:
+        return float("nan")
+    return float(stop_loss_eur / abs(monthly_loss))

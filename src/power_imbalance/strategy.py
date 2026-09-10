@@ -38,6 +38,7 @@ class StrategyParams:
     sizing: str = "binary"
     max_position: float = 1.0
     vol_lookback: int = 168
+    side: str = "both"
 
 
 def _direction(pred: pd.DataFrame) -> np.ndarray:
@@ -93,6 +94,12 @@ def positions(
         raise ValueError(f"unknown sizing rule: {params.sizing}")
 
     pos = direction * size * trade
+    if params.side == "buy":
+        pos = np.where(pos > 0, pos, 0.0)
+    elif params.side == "sell":
+        pos = np.where(pos < 0, pos, 0.0)
+    elif params.side != "both":
+        raise ValueError(f"unknown side: {params.side}")
     return pd.Series(np.clip(pos, -params.max_position, params.max_position),
                      index=pred.index, name="position")
 
