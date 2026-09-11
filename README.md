@@ -412,6 +412,24 @@ Look-ahead and a mis-wired pipeline are the two failure modes that produce the
 most impressive-looking wrong answers. Both seemed worth testing for rather than
 promising.
 
+## How this was built
+
+The code and the prose in this repository were written with Claude Code. The
+direction was not: which questions to ask, which results were worth keeping,
+and what the honest reading of a 101-day sample is were decided here, and the
+numbers were checked against the outputs in `reports/` rather than taken on
+trust.
+
+It is also part of why the tests above exist. An assistant produces plausible
+code quickly, which means it produces plausible look-ahead quickly, and that
+failure is silent — the backtest does not crash, it returns a better number
+than it should. `test_assert_causal_catches_a_leak` plants a leak deliberately
+so the guard has to fire, and
+`test_direction_comes_from_the_classifier_not_the_regression` pins a bug that
+had already happened once: taking the sign from the regression instead of the
+classifier turned a working strategy into one that lost 0.57 EUR/MWh, and
+nothing about the code looked wrong.
+
 ---
 
 *Data: hourly day-ahead and imbalance settlement prices plus the system's net
