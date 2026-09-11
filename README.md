@@ -1,4 +1,4 @@
-# Day-ahead vs imbalance: a strategy study on an Italian hourly dataset
+# Day-ahead vs imbalance: a strategy study on an hourly dataset
 
 A quantitative study of a single trade: take a position in the day-ahead
 auction, close it in the imbalance market, keep the difference.
