@@ -1,10 +1,10 @@
 """The information set — the part of this project that decides whether the
 backtest is honest.
 
-A position in this strategy is taken in the day-ahead auction. In the Italian day-ahead
-market (MGP) the auction closes at 12:00 on D-1 and covers all 24 hours of day
-D, with results published by 12:58 the same afternoon. So the
-decision for *every* hour of D is made at one moment, before the auction
+A position in this strategy is taken in the day-ahead auction. Across the
+European coupled day-ahead market (SDAC) the auction closes at 12:00 on D-1 and
+covers all 24 hours of day D, with results published early the same afternoon.
+So the decision for *every* hour of D is made at one moment, before the auction
 clears, with whatever was known at 12:00 on D-1.
 
 Two consequences, and both are routinely ignored in imbalance backtests:

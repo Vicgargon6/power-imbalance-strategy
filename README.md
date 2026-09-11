@@ -32,7 +32,7 @@ cross-border. That constraint shapes the conclusion.
 
 ---
 
-## Four findings
+## Five findings
 
 ### 1. The spread sign is the system sign
 
@@ -82,6 +82,13 @@ Under that constraint, walk-forward, refitted daily:
 | Logistic, calendar only | 0.598 | 55.1% | 50.7% |
 | Persistence at 24 hours | — | 60.4% | — |
 
+**A seasonal time-series model does not do better.** `scripts/run_sarima.py`
+fits a SARIMA(1,0,1)(1,0,1,24) to the imbalance volume and takes the sign of the
+forecast — a different inductive bias, with explicit daily seasonality instead of
+a tree over lagged features, fitted at the same 36-hour horizon. It calls the
+sign 53.2% of the time against a 51.3% base rate, below the classifier's 55.3%.
+It is reported here rather than omitted.
+
 Roughly five points of accuracy over a coin flip. Small, but on a spread whose
 median magnitude is 30 EUR/MWh, five points is money.
 
@@ -123,6 +130,8 @@ hours occur with the system long, but the single largest is +8,171 with the
 system short — which is the worst possible outcome for a *seller*. Selling the
 day-ahead is a bet with a bounded gain and a five-figure left tail.
 
+![Losses are one-sided](reports/figures/f6_one_sided_loss.png)
+
 So: restrict the strategy to one side.
 
 | Strategy | Traded | Mean | 95% CI | Sharpe | CVaR 5% | 1st half | 2nd half |
@@ -136,6 +145,8 @@ negative out of sample. **It was not adding return, it was adding variance —
 and it was what killed the strategy in the second half.** Dropping it halves the
 tail, more than doubles the Sharpe, tightens the confidence interval away from
 zero, and leaves a strategy that is still positive in the second half.
+
+![One-sided comparison](reports/figures/f7_one_sided_comparison.png)
 
 **The honest caveat.** The buy side was chosen after seeing that it works, on the
 same 101 days. There is a mechanism — the loss is bounded on a correct call and
@@ -165,9 +176,11 @@ true uncapped spread.
 
 ![Equity curves](reports/figures/f4_equity.png)
 
-**Only one strategy has a confidence interval that excludes zero**, and it
-excludes it barely, after several candidate models were tried on 101 days of
-data. Treat that as a hypothesis worth more data, not as a result.
+**Two strategies have a confidence interval that excludes zero** — the
+bidirectional model barely, at [1.61, 19.72], and the one-sided version with more
+room, at [3.35, 12.01]. Both were arrived at after several candidates were tried
+on 101 days of data, and neither interval is corrected for that. Treat them as
+hypotheses worth more data, not as results.
 
 ---
 
@@ -194,6 +207,67 @@ output climbs steeply into spring.
 The conclusion is not "this strategy works". It is: *this strategy worked in
 February, the mechanism is plausible, and a study on one quarter of data cannot
 tell the difference between a seasonal effect and a durable one.*
+
+---
+
+## Confidence, and what the model is not entitled to claim
+
+The natural next rule is "trade only when the model is more than 80% confident".
+It breaks here, and the way it breaks is worth more than the rule.
+
+![Calibration](reports/figures/f8_calibration.png)
+
+| Score bucket | Hours | Claimed | Realised | Error |
+|---|---|---|---|---|
+| 0–30% | 279 | 17% | 46% | **+29 pts** |
+| 40–50% | 135 | 45% | 44% | −0 pts |
+| 70–80% | 129 | 75% | 46% | **−29 pts** |
+| 80–100% | 293 | 90% | **65%** | **−25 pts** |
+
+The hours the model scores at 0.90 contain a short system 65% of the time. A
+gradient-boosted tree fitted on a hundred days does not produce probabilities
+that mean what they say, so **a ladder built on the printed number is a ladder
+built on a label**. Isotonic calibration does not rescue it either: fitted on
+this sample it compresses everything into 0.4–0.7 and destroys the ordering the
+ladder needs.
+
+What survives is the *ranking*. So confidence is defined here by **realised
+frequency inside a score decile** — the score orders the hours, the data prices
+each rung.
+
+![Confidence ladder](reports/figures/f9_ladder.png)
+
+| Decile | Realised P(short) | Mean P&L | Sharpe | CVaR 5% | Worst hour |
+|---|---|---|---|---|---|
+| 10 | **71%** | **+31.67** | 27.65 | −126 | −280 |
+| 9 | 59% | +16.51 | 32.06 | −67 | −79 |
+| 7 | 56% | +17.36 | 29.11 | −68 | −80 |
+| 5 | 50% | +9.54 | 14.87 | −99 | −281 |
+| 4 | 40% | −1.59 | −2.80 | −72 | −81 |
+| 1 | 52% | **−22.06** | −5.03 | **−705** | **−4,551** |
+
+The top decile earns 31.67 EUR/MWh at a realised 71% short. The bottom decile
+loses 22.06 and holds the worst hour in the sample. **The middle of the ladder is
+noise** — decile 4 is negative, decile 5 beats decile 6 — which is the honest
+reading of 126 hours per rung.
+
+Graded sizing beats a single cut at the same exposure. At an average exposure of
+0.35, sizing by rung earns **6.07 EUR/MWh [2.61, 10.02]** against **5.19 [1.93,
+8.87]** for a hard cut at decile 8 with 0.30 exposure, because the deciles just
+above any cut carry very little of the edge:
+
+| Rule | Exposure | Mean | 95% CI | Sharpe | CVaR 5% | 2nd half |
+|---|---|---|---|---|---|---|
+| **Graded ladder** | **0.35** | **6.07** | **[2.61, 10.02]** | **13.34** | **−63** | **+1.54** |
+| Cut at decile 5 | 0.60 | 8.33 | [3.20, 13.84] | 14.54 | −83 | +2.37 |
+| Cut at decile 8 | 0.30 | 5.19 | [1.93, 8.87] | 11.11 | −70 | +1.32 |
+| Cut at decile 9 | 0.20 | 4.82 | [2.17, 8.02] | 11.73 | −54 | +1.41 |
+
+One implementation note that is really a look-ahead note: `SizeLadder.size()`
+takes an explicit reference series for the decile boundaries. In a backtest that
+must be the training scores — computing the cut points from the test scores would
+leak the future into the position size, which is the quiet way a rule like this
+cheats.
 
 ---
 
@@ -226,8 +300,6 @@ interval on the mean.
 ### How much can you actually put behind it
 
 Hourly CVaR is the right tail measure, but it is not what a desk sizes against.
-Bootstrapping whole trading days into months:
-
 For the one-sided strategy, bootstrapping whole trading days into months:
 
 | A month of P&L, EUR per MWh of notional | Buy side only | Both sides |
@@ -269,8 +341,9 @@ protection, not return.**
 
 ## What this study does not claim
 
-- Not a live strategy. 101 days, one winter-to-spring window, one price regime,
-  and an edge that disappears in the second half of it.
+- Not a live strategy. 101 days, one winter-to-spring window, one price regime.
+  Every bidirectional variant dies in the second half of it; the one-sided
+  version survives, but on the same sample that selected it.
 - Several models were tried on one small sample. The one confidence interval
   that excludes zero has not been corrected for that.
 - No transaction costs beyond an optional flat `cost_per_mwh`; no market impact,
@@ -282,8 +355,8 @@ protection, not return.**
 
 1. **Exogenous forecasts** — wind, solar, demand, and their day-ahead errors.
    These are what drive the system imbalance; their absence is why the
-   classifier only reaches 55%. The oracle earns 56.00 against the best
-   implementable 9.48, so a genuine imbalance forecast is worth roughly six
+   classifier only reaches 55%. The oracle earns 56.00 against 7.41 for the
+   one-sided strategy, so a genuine imbalance forecast is worth roughly seven
    times the entire current edge. That is an argument for buying data, not for a
    bigger model.
 2. **More than one quarter**, to separate a seasonal effect from a durable one.
@@ -304,8 +377,10 @@ src/power_imbalance/
     strategy.py      forecasts -> positions -> P&L
     backtest.py      walk-forward engine, one refit per day
     risk.py          Sharpe, Sortino, VaR, CVaR, drawdown, tail concentration
-    plots.py         the five figures in this README
+    confidence.py    calibration, the decile ladder, size from realised frequency
+    plots.py         the nine figures in this README
 scripts/run_backtest.py       end-to-end run, writes reports/
+scripts/run_sarima.py         seasonal time-series route to the sign
 notebooks/01_analysis.ipynb   the same story, step by step
 tests/                        20 tests, six of which exist to catch mistakes
                               that would flatter the result
@@ -340,6 +415,6 @@ promising.
 ---
 
 *Data: hourly day-ahead and imbalance settlement prices plus the system's net
-imbalance volume, 1 January to 10 April 2024. The dataset arrived unlabelled;
-it is an Italian series. Nothing in the analysis depends on the country beyond
-the gate-closure time, which is 12:00 on D-1 for every SDAC day-ahead auction.*
+imbalance volume, 1 January to 10 April 2024. The series is unlabelled as to
+country. Nothing in the analysis depends on it beyond the gate-closure time,
+which is 12:00 on D-1 for every SDAC day-ahead auction.*
